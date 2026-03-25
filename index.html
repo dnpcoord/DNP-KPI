@@ -742,6 +742,37 @@ function calcI11(){
 
 function getMetaInd(id,def){ return MetasInd[id]!==undefined?MetasInd[id]:def; }
 
+// IND-12: Prontidão para lançamento
+// Empreend. que atendem simultaneamente: score≥7 + protocolos no prazo + metas de etapas no prazo
+function calcI12(){
+  const hoje=new Date(); hoje.setHours(0,0,0,0);
+  let prontos=0;
+  EMPS.forEach((emp,ei)=>{
+    // Critério 1: score do empreendimento ≥ 7
+    const sc=scoreEmp(ei);
+    if(sc<7) return;
+    // Critério 2: todos os protocolos abertos deste emp estão no prazo (nenhum atrasado)
+    const protosEmp=P.filter(p=>p.emp===emp&&p.ab&&!p.ap&&p.meta);
+    if(protosEmp.length>0){
+      const algumAtrasado=protosEmp.some(p=>{ const m=new Date(p.meta); m.setHours(0,0,0,0); return hoje>m; });
+      if(algumAtrasado) return;
+    }
+    // Critério 3: todas as metas de etapas configuradas estão no prazo
+    const metas=GRUPOS_META_ETAPA.map((_,gi)=>MetaEtapas[`${ei}_${gi}`])
+      .filter(m=>m&&m.contratacao&&m.prazo_dias);
+    if(metas.length>0){
+      const algumAtrasado=metas.some(m=>{
+        const cont=new Date(m.contratacao); cont.setHours(0,0,0,0);
+        const venc=new Date(cont); venc.setDate(venc.getDate()+parseInt(m.prazo_dias));
+        return hoje>venc;
+      });
+      if(algumAtrasado) return;
+    }
+    prontos++;
+  });
+  return (prontos/EMPS.length)*100; // retorna como % para normalizar igual aos outros pct
+}
+
 function calcIndice(){
   const sp=statsProto();
   const sv=statsViab();
@@ -767,8 +798,9 @@ function calcIndice(){
   const i09=Math.min(10,revEff/10);                             // pct → /10
   const i10=Math.min(10,calcI10()/10);                          // pct → /10
   const i11=Math.min(10,(calcI11()/nEmps)*10);                  // int → %emp
+  const i12=Math.min(10,calcI12()/10);                          // pct → /10
 
-  const norm=[i01,i02,i03,i04,i05,i06,i07,i08,i09,i10,i11];
+  const norm=[i01,i02,i03,i04,i05,i06,i07,i08,i09,i10,i11,i12];
   return {norm,avg:norm.reduce((a,b)=>a+b,0)/norm.length};
 }
 
@@ -838,7 +870,7 @@ function renderGraficos(){
   const c1=document.getElementById('cInd').getContext('2d');
   if(gI) gI.destroy();
   gI=new Chart(c1,{type:'bar',data:{
-    labels:['01','02','03','04','05','06','07','08','09','10','11'],
+    labels:['01','02','03','04','05','06','07','08','09','10','11','12'],
     datasets:[{data:norm.map(v=>+v.toFixed(2)),backgroundColor:norm.map(cor),borderRadius:2,borderSkipped:false}]
   },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`IND-${c.label}: ${c.raw.toFixed(2)}`}}},scales:{x:{ticks:{color:tickColor,font:{family:'DM Mono',size:11}},grid:{display:false}},y:{min:0,max:10,ticks:{color:tickColor,font:{family:'DM Mono',size:10}},grid:{color:gridColor}}}}});
 
@@ -900,17 +932,18 @@ function renderKPIs(){
 //  CARD DE METAS — 11 INDICADORES
 // ══════════════════════════════════════════════════════════════
 const IND_DEFS=[
-  {id:'IND-01',nome:'Score médio do portfólio',              resp:'DNP (Setor)', metaDef:6,   fmt:'sc',  calc:calcI01},
-  {id:'IND-02',nome:'Empreend. maduros (score ≥ 7,0)',       resp:'DNP (Setor)', metaDef:4,   fmt:'int', calc:calcI02},
-  {id:'IND-03',nome:'Proj. Arquitetônico',                   resp:'Rafael',      metaDef:7,   fmt:'sc',  calc:calcI03},
-  {id:'IND-04',nome:'Projetos de Ambientes',                 resp:'Mayara',      metaDef:5,   fmt:'sc',  calc:calcI04},
-  {id:'IND-05',nome:'Material de Vendas',                    resp:'Érika',       metaDef:5,   fmt:'sc',  calc:calcI05},
-  {id:'IND-06',nome:'Tempo médio de análise',                resp:'Rafael',      metaDef:10,  fmt:'dias',calc:()=>statsViab().tempo},
-  {id:'IND-07',nome:'Taxa de viabilidade técnica',           resp:'Rafael',      metaDef:60,  fmt:'pct', calc:()=>statsViab().taxa},
-  {id:'IND-08',nome:'Protocolos no prazo',                   resp:'Rafael',      metaDef:80,  fmt:'pct', calc:()=>{ const s=statsProto(); return s.taxaPrazo??0; }},
-  {id:'IND-09',nome:'Eficiência de revisões',                resp:'Rafael',      metaDef:80,  fmt:'pct', calc:()=>{ const s=statsProto(); return s.revEff??0; }},
-  {id:'IND-10',nome:'Maturidade de etapas',                  resp:'DNP (Setor)', metaDef:60,  fmt:'pct', calc:calcI10},
-  {id:'IND-11',nome:'Empreend. dentro do prazo de etapas',   resp:'DNP (Setor)', metaDef:4,   fmt:'int', calc:calcI11},
+  {id:'IND-01',nome:'Score médio do portfólio',              resp:'DNP (Setor)', metaDef:6,   fmt:'sc',  calc:calcI01,  legenda:'Média dos scores de todos os empreendimentos na matriz de acompanhamento.'},
+  {id:'IND-02',nome:'Empreend. maduros (score ≥ 7,0)',       resp:'DNP (Setor)', metaDef:4,   fmt:'int', calc:calcI02,  legenda:'Quantidade de empreendimentos com score final ≥ 7,0. Normalizado pelo total de 11 empreendimentos.'},
+  {id:'IND-03',nome:'Proj. Arquitetônico',                   resp:'Rafael',      metaDef:7,   fmt:'sc',  calc:calcI03,  legenda:'Média dos scores das etapas de projeto arquitetônico (contratação, estudo preliminar, anteprojeto, projeto legal).'},
+  {id:'IND-04',nome:'Projetos de Ambientes',                 resp:'Mayara',      metaDef:5,   fmt:'sc',  calc:calcI04,  legenda:'Média dos scores das etapas de interiores e paisagismo combinados.'},
+  {id:'IND-05',nome:'Material de Vendas',                    resp:'Érika',       metaDef:5,   fmt:'sc',  calc:calcI05,  legenda:'Média dos scores de material visual (imagens, vídeos, tour 360) e maquete física.'},
+  {id:'IND-06',nome:'Tempo médio de análise',                resp:'Rafael',      metaDef:10,  fmt:'dias',calc:()=>statsViab().tempo, legenda:'Média de dias entre início e entrega dos estudos de viabilidade. Quanto menor, melhor.'},
+  {id:'IND-07',nome:'Taxa de viabilidade técnica',           resp:'Rafael',      metaDef:60,  fmt:'pct', calc:()=>statsViab().taxa, legenda:'Percentual de terrenos considerados viáveis sobre o total com resultado técnico definido.'},
+  {id:'IND-08',nome:'Protocolos no prazo',                   resp:'Rafael',      metaDef:60,  fmt:'pct', calc:()=>{ const s=statsProto(); return s.taxaPrazo??0; }, legenda:'Percentual de protocolos abertos que estão dentro da data meta sobre o total com meta definida.'},
+  {id:'IND-09',nome:'Eficiência de revisões',                resp:'Rafael',      metaDef:60,  fmt:'pct', calc:()=>{ const s=statsProto(); return s.revEff??0; }, legenda:'Percentual de protocolos com 3 ou menos revisões sobre o total que possui revisões.'},
+  {id:'IND-10',nome:'Maturidade de etapas',                  resp:'DNP (Setor)', metaDef:60,  fmt:'pct', calc:calcI10, legenda:'Percentual de etapas concluídas (score = 10) sobre o total de etapas aplicáveis (não N/A).'},
+  {id:'IND-11',nome:'Empreend. dentro do prazo de etapas',   resp:'DNP (Setor)', metaDef:4,   fmt:'int', calc:calcI11, legenda:'Empreendimentos com todas as metas de etapas configuradas dentro do prazo. Normalizado pelo total de 11.'},
+  {id:'IND-12',nome:'Prontidão para lançamento',             resp:'DNP (Setor)', metaDef:30,  fmt:'pct', calc:calcI12, legenda:'Empreendimentos que atendem simultaneamente: score ≥ 7 + protocolos no prazo + metas de etapas no prazo.'},
 ];
 
 function renderIndCards(){
@@ -988,6 +1021,7 @@ function renderIndCards(){
         </div>
         <span class="st ${st.cls}">${st.lbl}</span>
       </div>
+      <div style="font-size:11px;color:var(--dim);line-height:1.5;padding-top:8px;border-top:1px solid var(--border)">${d.legenda}</div>
     </div>`;
   }).join('');
 
