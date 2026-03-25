@@ -58,7 +58,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14
 
 /* LOADING */
 #loading{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .4s}
-#loading.hide{display:none!important}
+#loading.hide{opacity:0;pointer-events:none}
 .spinner{width:32px;height:32px;border:1px solid rgba(200,169,110,.15);border-top-color:var(--gold);border-radius:50%;animation:spin 1s linear infinite}
 .load-logo{font-family:var(--serif);font-size:44px;font-weight:300;color:rgba(200,169,110,.7);letter-spacing:.12em;margin-bottom:8px}
 .load-txt{font-family:var(--mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:rgba(200,169,110,.4);margin-top:8px}
@@ -705,7 +705,7 @@ function calcI11(){
   const hoje=new Date(); hoje.setHours(0,0,0,0);
   let ok=0;
   EMPS.forEach((emp,ei)=>{
-    const metas=GRUPOS_META_ETAPA.map((_,gi)=>MetaEtapas[`${ei}_${gi}`])
+    const metas=GRUPOS_META_ETAPA.map((_,gi)=>MetaEtapas[''+(ei)+'_'+(gi)])
       .filter(m=>m&&m.contratacao&&m.prazo_dias);
     if(metas.length===0) return;
     const todas=metas.every(m=>{
@@ -809,14 +809,14 @@ function renderGraficos(){
   gI=new Chart(c1,{type:'bar',data:{
     labels:['01','02','03','04','05','06','07','08','09','10','11'],
     datasets:[{data:norm.map(v=>+v.toFixed(2)),backgroundColor:norm.map(cor),borderRadius:2,borderSkipped:false}]
-  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`IND-${c.label}: ${c.raw.toFixed(2)}`}}},scales:{x:{ticks:{color:tickColor,font:{family:'DM Mono',size:11}},grid:{display:false}},y:{min:0,max:10,ticks:{color:tickColor,font:{family:'DM Mono',size:10}},grid:{color:gridColor}}}}});
+  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'IND-'+(c.label)+': '+(c.raw.toFixed(2))}}},scales:{x:{ticks:{color:tickColor,font:{family:'DM Mono',size:11}},grid:{display:false}},y:{min:0,max:10,ticks:{color:tickColor,font:{family:'DM Mono',size:10}},grid:{color:gridColor}}}}});
 
   const c2=document.getElementById('cEmp').getContext('2d');
   if(gE) gE.destroy();
   gE=new Chart(c2,{type:'bar',data:{
     labels:EMPS.map(e=>e.length>13?e.slice(0,12)+'…':e),
     datasets:[{data:es.map(v=>+v.toFixed(2)),backgroundColor:es.map(cor),borderRadius:2,borderSkipped:false}]
-  },options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`Score: ${c.raw.toFixed(2)}`}}},scales:{x:{min:0,max:10,ticks:{color:tickColor,font:{family:'DM Mono',size:10}},grid:{color:gridColor}},y:{ticks:{color:tickColor,font:{family:'Outfit',size:11}},grid:{display:false}}}}});
+  },options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'Score: '+(c.raw.toFixed(2))}}},scales:{x:{min:0,max:10,ticks:{color:tickColor,font:{family:'DM Mono',size:10}},grid:{color:gridColor}},y:{ticks:{color:tickColor,font:{family:'Outfit',size:11}},grid:{display:false}}}}});
 
   const c3=document.getElementById('cRad').getContext('2d');
   if(gR) gR.destroy();
@@ -837,15 +837,15 @@ function renderInsights(){
   const best=EMPS[es.indexOf(Math.max(...es))];
   const worst=EMPS[es.indexOf(Math.min(...es))];
   const its=[];
-  if(avg>=7) its.push({c:'ok',h:`<strong>Ótima performance geral:</strong> Índice PEX de <strong>${fN(avg)}</strong> acima da meta de 7,0.`});
-  else if(avg>=5) its.push({c:'w',h:`<strong>Performance parcial:</strong> Índice PEX de <strong>${fN(avg)}</strong>. Disciplinas precisam de atenção.`});
-  else its.push({c:'bad',h:`<strong>Performance abaixo:</strong> Índice PEX de <strong>${fN(avg)}</strong>. Revisão urgente do pipeline.`});
-  if(calcI02()<4) its.push({c:'bad',h:`<strong>Pipeline maduro insuficiente:</strong> Apenas <strong>${calcI02()} empreend.</strong> com score ≥ 7,0 (meta: 4).`});
-  if(sp.atrasadoN>0) its.push({c:'bad',h:`<strong>${sp.atrasadoN} protocolo(s) atrasado(s):</strong> passaram da data meta.`});
-  if(sv.tempo>0&&sv.tempo>getMetaInd('IND-06',10)) its.push({c:'w',h:'<strong>Tempo médio de análise:</strong> '+fN(sv.tempo,1)+' dias (meta: '+getMetaInd('IND-06',10)+' dias).'});
-  if(sp.revEff!==null&&sp.revEff<80) its.push({c:'w',h:`<strong>Eficiência de revisões:</strong> ${sp.revEff}% dos protocolos têm ≤ 3 revisões.`});
-  its.push({c:'info',h:`<strong>Melhor empreendimento:</strong> ${best} &nbsp;|&nbsp; <strong>Pior:</strong> ${worst}`});
-  document.getElementById('insights').innerHTML=its.map(i=>`<div class="ins ${i.c}">${i.h}</div>`).join('');
+  if(avg>=7) its.push({c:'ok',h:'<strong>Ótima performance geral:</strong> Índice PEX de <strong>'+fN(avg)+'</strong> acima da meta de 7,0.'});
+  else if(avg>=5) its.push({c:'w',h:'<strong>Performance parcial:</strong> Índice PEX de <strong>'+(fN(avg))+'</strong>. Disciplinas precisam de atenção.'});
+  else its.push({c:'bad',h:'<strong>Performance abaixo:</strong> Índice PEX de <strong>'+fN(avg)+'</strong>. Revisão urgente do pipeline.'});
+  if(calcI02()<4) its.push({c:'bad',h:'<strong>Pipeline maduro insuficiente:</strong> Apenas <strong>'+(calcI02())+' empreend.</strong> com score ≥ 7,0 (meta: 4).'});
+  if(sp.atrasadoN>0) its.push({c:'bad',h:'<strong>'+(sp.atrasadoN)+' protocolo(s) atrasado(s):</strong> passaram da data meta.'});
+  if(sv.tempo>0&&sv.tempo>getMetaInd('IND-06',10)) its.push({c:'w',h:'<strong>Tempo médio de análise:</strong> '+(fN(sv.tempo,1))+' dias (meta: '+(getMetaInd('IND-06',10))+' dias).'});
+  if(sp.revEff!==null&&sp.revEff<80) its.push({c:'w',h:'<strong>Eficiência de revisões:</strong> '+(sp.revEff)+'% dos protocolos têm ≤ 3 revisões.'});
+  its.push({c:'info',h:'<strong>Melhor empreendimento:</strong> '+best+' &nbsp;|&nbsp; <strong>Pior:</strong> '+worst});
+  document.getElementById('insights').innerHTML=its.map(i=>'<div class="ins '+(i.c)+'">'+(i.h)+'</div>').join('');
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -853,7 +853,7 @@ function renderInsights(){
 // ══════════════════════════════════════════════════════════════
 function renderEmpBars(){
   const s=EMPS.map((n,i)=>({n,s:scoreEmp(i)})).sort((a,b)=>b.s-a.s);
-  document.getElementById('emp-bars').innerHTML=s.map(e=>`<div class="emp-bar"><div class="en">${e.n}</div><div class="et"><div class="ef" style="width:${e.s*10}%;background:${cor(e.s)}"></div></div><div class="es" style="color:${cor(e.s)}">${fN(e.s)}</div></div>`).join('');
+  document.getElementById('emp-bars').innerHTML=s.map(e=>'<div class="emp-bar"><div class="en">'+(e.n)+'</div><div class="et"><div class="ef" style="width:'+(e.s*10)+'%;background:'+(cor(e.s))+'"></div></div><div class="es" style="color:'+(cor(e.s))+'">'+(fN(e.s))+'</div></div>').join('');
 }
 
 function renderKPIs(){
@@ -917,21 +917,21 @@ function renderIndCards(){
       else       pct=((Number(val)-Number(meta))/Number(meta))*100; // negativo = pior
       const abs=Math.abs(pct).toFixed(1);
       if(pct>=0){
-        desvioHtml=`<span style="font-family:var(--mono);font-size:10px;color:var(--green);letter-spacing:.04em">+${abs}% acima da meta</span>`;
+        desvioHtml='<span style="font-family:var(--mono);font-size:10px;color:var(--green);letter-spacing:.04em">+'+(abs)+'% acima da meta</span>';
       } else {
-        desvioHtml=`<span style="font-family:var(--mono);font-size:10px;color:var(--red);letter-spacing:.04em">−${abs}% abaixo da meta</span>`;
+        desvioHtml='<span style="font-family:var(--mono);font-size:10px;color:var(--red);letter-spacing:.04em">−'+(abs)+'% abaixo da meta</span>';
       }
     }
 
     const ms=meta!==null&&meta!==undefined?meta:'—';
     const metaUnit=d.fmt==='pct'?'%':d.fmt==='dias'?' dias':d.fmt==='sc'?'/10':'';
-    const metaDisplay=ms==='—'?'—':`${ms}${metaUnit}`;
+    const metaDisplay=ms==='—'?'—':''+(ms)+(metaUnit);
 
     // Barra de progresso baseada no score
     const bp=score!==null?Math.min(100,score*10):0;
     const bc=st.cls==='st-ok'?'var(--green)':st.cls==='st-w'?'var(--yellow)':'var(--red)';
 
-    return `<div class="ind-card">
+    return '<div class="ind-card">'
       <div class="ind-id">${d.id}</div>
       <div class="ind-name">${d.nome}</div>
       <div class="ind-owner">Resp: ${d.resp}</div>
@@ -957,7 +957,7 @@ function renderIndCards(){
         <div class="prog-wrap"><div class="prog-bar" style="width:${bp}%;background:${bc}"></div></div>
       </div>
       <div><span class="st ${st.cls}">${st.lbl}</span></div>
-    </div>`;
+    </div>';'
   }).join('');
 
   document.getElementById('fi-num').textContent=fN(avg);
@@ -995,32 +995,32 @@ function renderAcomp(){
   GRUPOS.forEach(grp=>{
     const div=document.createElement('div'); div.className='acc';
     const head=document.createElement('div'); head.className='acc-head open';
-    head.innerHTML=`<span class="acc-arrow">&#x25B6;</span>${grp.g}`;
+    head.innerHTML='<span class="acc-arrow">&#x25B6;</span>'+(grp.g);
     const body=document.createElement('div'); body.className='acc-body open';
     head.onclick=function(){this.classList.toggle('open');body.classList.toggle('open');};
     const tbl=document.createElement('table');
-    const ths=EMPS.map(function(e){ return '<th style="text-align:center;font-size:8px;min-width:52px">'+e.replace(/ /g,'<br>')+'</th>'; }).join('');
-    tbl.innerHTML=`<thead><tr><th style="min-width:190px">Etapa</th>${ths}</tr></thead>`;
+    const ths=EMPS.map(e=>'<th style="text-align:center;font-size:8px;min-width:52px">'+(e.replace(/ /g,'<br>'))+'</th>').join('');
+    tbl.innerHTML='<thead><tr><th style="min-width:190px">Etapa</th>'+(ths)+'</tr></thead>';
     const tb=document.createElement('tbody');
     grp.e.forEach(etapa=>{
       if(!S[etapa]) return;
       const tr=document.createElement('tr');
-      const cels=EMPS.map((_,i)=>`<td style="text-align:center;padding:6px 3px">${chipHTML(etapa,i)}</td>`).join('');
-      tr.innerHTML=`<td style="font-size:12px;color:var(--muted);white-space:nowrap;padding-right:12px">${etapa}</td>${cels}`;
+      const cels=EMPS.map((_,i)=>'<td style="text-align:center;padding:6px 3px">'+(chipHTML(etapa,i))+'</td>').join('');
+      tr.innerHTML='<td style="font-size:12px;color:var(--muted);white-space:nowrap;padding-right:12px">'+(etapa)+'</td>'+(cels);
       tb.appendChild(tr);
     });
     tbl.appendChild(tb); body.appendChild(tbl); div.appendChild(head); div.appendChild(body); cont.appendChild(div);
   });
   const es=EMPS.map((_,i)=>scoreEmp(i));
-  document.getElementById('res-card').innerHTML=`<div class="card-title">Resultado por Empreendimento</div>
+  document.getElementById('res-card').innerHTML='<div class="card-title">Resultado por Empreendimento</div>'
     <div class="tbl-wrap"><table>
-      <thead><tr><th>Métrica</th>${EMPS.map(function(e){ return '<th style="text-align:center;font-size:8px">'+e.replace(/ /g,'<br>')+'</th>'; }).join('')}</tr></thead>
-      <tbody><tr><td style="font-weight:600">Score Final</td>${es.map(function(s){ return '<td style="font-family:var(--mono);text-align:center;color:'+cor(s)+';font-weight:700;font-size:13px">'+fN(s)+'</td>'; }).join('')}</tr></tbody>
+      <thead><tr><th>Métrica</th>${EMPS.map(e=>'<th style="text-align:center;font-size:8px">'+(e.replace(/ /g,'<br>'))+'</th>').join('')}</tr></thead>
+      <tbody><tr><td style="font-weight:600">Score Final</td>${es.map(s=>'<td style="font-family:var(--mono);text-align:center;color:'+(cor(s))+';font-weight:700;font-size:13px">'+(fN(s))+'</td>').join('')}</tr></tbody>
     </table></div>
     <div style="margin-top:14px;font-family:var(--mono);font-size:12px;color:var(--muted)">
       Média geral: <strong style="color:var(--gold);font-size:18px">${fN(calcI01())}</strong>
       &nbsp;|&nbsp; Maduros (≥7,0): <strong style="color:var(--green)">${calcI02()}</strong>
-    </div>`;
+    </div>';'
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1039,7 +1039,7 @@ function renderViab(){
     const diasNum=typeof dias==='number'?dias:null;
     const diasColor=diasNum?( diasNum<=metaTempo?'var(--green)':'var(--red)'):'var(--dim)';
     const rc=v.res==='Viável'?'st-ok':v.res==='Não viável'?'st-bad':'st-na';
-    return `<tr>
+    return '<tr>'
       <td style="font-family:var(--mono);color:var(--dim)">${i+1}</td>
       <td><strong>${v.nome}</strong></td>
       <td style="font-family:var(--mono);font-size:12px;color:var(--muted)">${v.ini||'—'}</td>
@@ -1108,19 +1108,19 @@ function renderProto(){
 
     let badges='';
     if(atras>0) badges+='<span class="pb pb-atrasado">'+(atras>1?(atras+' atrasados'):(atras+' atrasado'))+'</span> ';
-    else if(abertos.length>0) badges+='<span class="pb pb-prazo">'+abertos.length+' no prazo</span> ';
+    else if(abertos.length>0) badges+='<span class="pb pb-prazo">'+(abertos.length)+' no prazo</span> ';
     if(ok>0) badges+='<span class="pb pb-ok">'+(ok>1?(ok+' aprovados'):(ok+' aprovado'))+'</span>';
 
     const headDiv=document.createElement('div');
     headDiv.className='proto-emp-head';
-    headDiv.innerHTML=`<strong>${emp}</strong><div style="display:flex;gap:6px;align-items:center">${badges}<span style="color:var(--dim);font-size:12px;font-family:var(--mono);transition:transform .2s" class="proto-arrow">&#x25B6;</span></div>`;
+    headDiv.innerHTML='<strong>'+(emp)+'</strong><div style="display:flex;gap:6px;align-items:center">'+(badges)+'<span style="color:var(--dim);font-size:12px;font-family:var(--mono);transition:transform .2s" class="proto-arrow">&#x25B6;</span></div>';
 
     const bodyDiv=document.createElement('div');
     bodyDiv.className='proto-emp-body';
 
-    let tableHtml=`<div class="card" style="margin-bottom:4px"><div class="tbl-wrap"><table>
+    let tableHtml='<div class="card" style="margin-bottom:4px"><div class="tbl-wrap"><table>'
       <thead><tr><th>Protocolo</th><th>Abertura</th><th>Data Meta</th><th>Aprovação</th><th>Em Tramitação</th><th>Status</th><th>Dias p/ Meta</th><th>Revisões</th><th></th></tr></thead>
-      <tbody>`;
+      <tbody>';'
 
     protos.forEach(p=>{
       let status='',statusCls='pb-ns',diasTram='—',tagDias='';
@@ -1132,8 +1132,8 @@ function renderProto(){
         if(p.meta){
           const metaD=new Date(p.meta); metaD.setHours(0,0,0,0);
           const diff=Math.round((metaD-hoje)/86400000);
-          if(diff<0){ status='Atrasado'; statusCls='pb-atrasado'; tagDias='<span class="tag-dias neg">'+diff+'d</span>'; }
-          else { status='No prazo'; statusCls='pb-prazo'; tagDias='<span class="tag-dias pos">+'+diff+'d</span>'; }
+          if(diff<0){ status='Atrasado'; statusCls='pb-atrasado'; tagDias='<span class="tag-dias neg">'+(diff)+'d</span>'; }
+          else { status='No prazo'; statusCls='pb-prazo'; tagDias='<span class="tag-dias pos">+'+(diff)+'d</span>'; }
         } else { status='Em aberto'; statusCls='pb-ns'; }
       } else { status='Não iniciado'; statusCls='pb-ns'; }
 
@@ -1141,7 +1141,7 @@ function renderProto(){
       const revCls=nRev<=3?'rev-ok':'rev-bad';
       const revBadge=nRev>0?('<span class="rev-badge '+revCls+'">'+ nRev+' rev.</span>'):'—'
 
-      tableHtml+=`<tr>
+      tableHtml+='<tr>'
         <td style="font-size:12px;font-weight:500">${p.nome}</td>
         <td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${p.ab||'—'}</td>
         <td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${p.meta||'—'}</td>
@@ -1151,10 +1151,10 @@ function renderProto(){
         <td>${tagDias||'—'}</td>
         <td>${revBadge}</td>
         <td><button class="btn sm" onclick="abrirModalProto(${p.id})">✎ Editar</button></td>
-      </tr>`;
+      </tr>';'
     });
 
-    tableHtml+=`</tbody></table></div></div>`;
+    tableHtml+='</tbody></table></div></div>';
     bodyDiv.innerHTML=tableHtml;
 
     headDiv.onclick=()=>{
@@ -1203,8 +1203,8 @@ function atualizarStatusAuto(){
     const metaD=new Date(meta); metaD.setHours(0,0,0,0);
     const diff=Math.round((metaD-hoje)/86400000);
     el.innerHTML=diff<0
-      ?`<span style="color:var(--red)">✗ Atrasado (${Math.abs(diff)} dias)</span>`
-      :`<span style="color:var(--green)">✓ No prazo (+${diff} dias)</span>`;
+      ?'<span style="color:var(--red)">✗ Atrasado ('+(Math.abs(diff))+' dias)</span>'
+      :'<span style="color:var(--green)">✓ No prazo (+'+(diff)+' dias)</span>';
   } else if(ab){ el.innerHTML='<span style="color:var(--muted)">Em aberto (sem data meta)</span>'; }
   else { el.innerHTML='<span style="color:var(--dim)">Não iniciado</span>'; }
 }
@@ -1214,20 +1214,17 @@ function addRevisao(){ _modalRevisoes.push({recebimento:'',reenvio:''}); renderR
 function renderRevisoes(){
   const cont=document.getElementById('mp-revisoes');
   if(_modalRevisoes.length===0){
-    cont.innerHTML=`<div style="font-family:var(--mono);font-size:12px;color:var(--dim);padding:8px 0">Nenhuma revisão ainda. A 1ª revisão ocorre quando a prefeitura devolve e você reenvia com correções.</div>`;
+    cont.innerHTML='<div style="font-family:var(--mono);font-size:12px;color:var(--dim);padding:8px 0">Nenhuma revisão ainda. A 1ª revisão ocorre quando a prefeitura devolve e você reenvia com correções.</div>';
     return;
   }
-  cont.innerHTML=_modalRevisoes.map(function(r,i){
-    var rn=i+1, rc=rn<=3?'rev-ok':'rev-bad', rw=rn>3?' &#x26A0;':'';
-    return '<div class="rev-row">'
-      +'<div class="rev-num"><span class="rev-badge '+rc+'">Rev. '+rn+rw+'</span></div>'
-      +'<div class="rev-dates">'
-      +'<label>Recebido da Pref.<input type="date" value="'+(r.recebimento||'')+'" onchange="_modalRevisoes['+i+'].recebimento=this.value"></label>'
-      +'<label>Reenvio<input type="date" value="'+(r.reenvio||'')+'" onchange="_modalRevisoes['+i+'].reenvio=this.value"></label>'
-      +'</div>'
-      +'<button class="btn d sm" onclick="_modalRevisoes.splice('+i+',1);renderRevisoes()" style="margin-left:auto">&#x2715;</button>'
-      +'</div>';
-  }).join('');
+  cont.innerHTML=_modalRevisoes.map((r,i)=>'<div class="rev-row">'
+    <div class="rev-num"><span class="rev-badge ${i+1<=3?'rev-ok':'rev-bad'}">Rev. ${i+1}${i+1>3?' ⚠':''}</span></div>
+    <div class="rev-dates">
+      <label>Recebido da Pref.<input type="date" value="${r.recebimento||''}" onchange="_modalRevisoes[${i}].recebimento=this.value"></label>
+      <label>Reenvio c/ correções<input type="date" value="${r.reenvio||''}" onchange="_modalRevisoes[${i}].reenvio=this.value"></label>
+    </div>
+    <button class="btn d sm" onclick="_modalRevisoes.splice(${i},1);renderRevisoes()" style="margin-left:auto">✕</button>
+  </div>').join(\'\');'
 }
 
 async function salvarModalProto(){
@@ -1260,20 +1257,20 @@ function renderEtapasMeta(){
   GRUPOS_META_ETAPA.forEach((grp,gi)=>{
     const div=document.createElement('div'); div.className='acc'; div.style.marginBottom='12px';
     const head=document.createElement('div'); head.className='acc-head open';
-    head.innerHTML=`<span class="acc-arrow">&#x25B6;</span>${grp.g}`;
+    head.innerHTML='<span class="acc-arrow">&#x25B6;</span>'+(grp.g);
     const body=document.createElement('div'); body.className='acc-body open';
     head.onclick=function(){this.classList.toggle('open');body.classList.toggle('open');};
 
     const card=document.createElement('div'); card.className='card'; card.style.margin='0';
-    let html=`<div style="display:grid;grid-template-columns:170px 110px 150px auto;gap:12px;padding:8px 0;border-bottom:1px solid var(--border2);margin-bottom:4px">
+    let html='<div style="display:grid;grid-template-columns:170px 110px 150px auto;gap:12px;padding:8px 0;border-bottom:1px solid var(--border2);margin-bottom:4px">'
       <div style="font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(200,169,110,.75)">Empreendimento</div>
       <div style="font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(200,169,110,.75)">Contratação</div>
       <div style="font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(200,169,110,.75)">Prazo (dias)</div>
       <div style="font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(200,169,110,.75)">Status</div>
-    </div>`;
+    </div>';'
 
     EMPS.forEach((emp,ei)=>{
-      const chave=`${ei}_${gi}`;
+      const chave=''+(ei)+'_'+(gi);
       const me=MetaEtapas[chave]||{contratacao:'',prazo_dias:''};
       let statusHtml='<span style="color:var(--dim);font-family:var(--mono);font-size:12px">—</span>';
       if(me.contratacao&&me.prazo_dias){
@@ -1281,13 +1278,13 @@ function renderEtapasMeta(){
         const vencD=new Date(contratD); vencD.setDate(vencD.getDate()+parseInt(me.prazo_dias));
         const diff=Math.round((vencD-hoje)/86400000);
         statusHtml=diff>=0
-          ?('<span class="st st-ok">&#x2713; No prazo</span> <span class="tag-dias pos">+'+diff+'d</span>')
-          :('<span class="st st-bad">&#x2717; Atrasado</span> <span class="tag-dias neg">'+diff+'d</span>');
+          ?'<span class="st st-ok">✓ No prazo</span> <span class="tag-dias pos">+'+(diff)+'d</span>'
+          :'<span class="st st-bad">✗ Atrasado</span> <span class="tag-dias neg">'+(diff)+'d</span>';
       } else if(me.contratacao){
-        statusHtml=`<span style="color:var(--dim);font-family:var(--mono);font-size:12px">sem prazo</span>`;
+        statusHtml='<span style="color:var(--dim);font-family:var(--mono);font-size:12px">sem prazo</span>';
       }
 
-      html+=`<div style="display:grid;grid-template-columns:170px 110px 150px auto;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+      html+='<div style="display:grid;grid-template-columns:170px 110px 150px auto;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">'
         <div style="font-size:12px;font-weight:500">${emp}</div>
         <div><input type="date" value="${me.contratacao||''}"
           style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-family:var(--mono);font-size:11px;padding:3px 6px;outline:none;width:100%"
@@ -1301,7 +1298,7 @@ function renderEtapasMeta(){
           <span style="font-family:var(--mono);font-size:11px;color:var(--dim)">dias</span>
         </div>
         <div id="emeta-status-${chave}">${statusHtml}</div>
-      </div>`;
+      </div>';'
     });
 
     card.innerHTML=html;
@@ -1374,38 +1371,35 @@ function goTab(el,id){
 //  INIT
 // ══════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', ()=>{
-  // PASSO 1: esconde loading IMEDIATAMENTE
-  try { document.getElementById('loading').classList.add('hide'); } catch(e){}
+  // Esconde loading imediatamente e inicia conexão em background
+  const loading = document.getElementById('loading');
+  loading.classList.add('hide');
+  renderTudo(); // renderiza com dados vazios enquanto conecta
 
-  // PASSO 2: renderiza interface vazia
-  try { renderTudo(); } catch(e){ console.error('renderTudo:', e); }
-
-  // PASSO 3: conecta em background
-  setTimeout(function(){
-    (async function(){
-      try {
-        var cfg = getConfig();
-        if(!initSupabase(cfg.url, cfg.key)){
-          setSaveStatus('error','credenciais invalidas'); return;
-        }
-        setSaveStatus('saving','conectando...');
-        var ok = await testarConexao();
-        if(!ok){
-          setSaveStatus('error','sem conexao');
-          try { document.getElementById('conn-status').innerHTML='<span style="color:var(--red)">Falha na conexao.</span>'; } catch(e){}
-          return;
-        }
-        try { document.getElementById('conn-status').innerHTML='<span style="color:var(--green)">Conectado ao Supabase</span>'; } catch(e){}
-        await carregarDados();
-        try { renderTudo(); } catch(e){ console.error('renderTudo2:', e); }
-        setSaveStatus('saved','conectado');
-        setTimeout(function(){ setSaveStatus('','conectado'); }, 1500);
-      } catch(e){
-        console.error('Init error:', e);
-        setSaveStatus('error','erro: '+e.message);
+  // Conecta em background sem travar a UI
+  (async ()=>{
+    try {
+      const cfg = getConfig();
+      if(!initSupabase(cfg.url, cfg.key)){
+        setSaveStatus('error','credenciais inválidas'); return;
       }
-    })();
-  }, 50);
+      setSaveStatus('saving','conectando…');
+      const ok = await testarConexao();
+      if(!ok){
+        setSaveStatus('error','sem conexão');
+        document.getElementById('conn-status').innerHTML='<span style="color:var(--red)">✗ Falha na conexão.</span>';
+        return;
+      }
+      document.getElementById('conn-status').innerHTML='<span style="color:var(--green)">✓ Conectado ao Supabase</span>';
+      await carregarDados();
+      renderTudo();
+      setSaveStatus('saved','conectado');
+      setTimeout(()=>setSaveStatus('','● conectado'),1500);
+    } catch(e){
+      console.error('Init error:', e);
+      setSaveStatus('error','erro: '+e.message);
+    }
+  })();
 });
 document.getElementById('modal-proto').addEventListener('click',function(e){if(e.target===this)fecharModalProto();});
 document.addEventListener('change',function(e){if(['mp-ab','mp-meta','mp-ap'].includes(e.target.id))atualizarStatusAuto();});
