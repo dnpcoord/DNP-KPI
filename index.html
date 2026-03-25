@@ -744,25 +744,29 @@ function calcIndice(){
   const sp=statsProto();
   const sv=statsViab();
   const metaTempo=getMetaInd('IND-06',10);
-  // IND-06: tempo médio — quanto menor melhor
-  const i06=sv.tempo>0?Math.max(0,Math.min(10,(metaTempo/sv.tempo)*10)):5;
-  // IND-07: taxa viabilidade
-  const i07=Math.min(10,(sv.taxa/100)*10);
-  // IND-08: protocolos no prazo
-  const i08=sp.taxaPrazo!==null?Math.min(10,(sp.taxaPrazo/100)*10):5;
-  // IND-09: eficiência revisões
-  const i09=sp.revEff!==null?Math.min(10,(sp.revEff/100)*10):5;
-  // IND-10: maturidade etapas
-  const i10=Math.min(10,(calcI10()/100)*10);
-  // IND-11: empreend. dentro do prazo (normalizado pela meta)
-  const metaI11=getMetaInd('IND-11',4);
-  const i11=Math.min(10,(calcI11()/Math.max(1,metaI11))*10);
-  const norm=[
-    calcI01(),
-    Math.min(10,(calcI02()/Math.max(1,getMetaInd('IND-02',4)))*10),
-    calcI03(), calcI04(), calcI05(),
-    i06, i07, i08, i09, i10, i11
-  ];
+  const nEmps=EMPS.length; // 11
+
+  // Normalização uniforme para 0-10:
+  // sc  → valor direto (já é 0-10)
+  // int → (valor / nEmps) * 10  (percentual sobre total de empreendimentos)
+  // pct → valor / 10            (75% = 7,5)
+  // dias→ min(10, meta/resultado * 10)  (menor = melhor)
+
+  const i01=calcI01();                                          // sc → direto
+  const i02=Math.min(10,(calcI02()/nEmps)*10);                  // int → %emp
+  const i03=calcI03();                                          // sc → direto
+  const i04=calcI04();                                          // sc → direto
+  const i05=calcI05();                                          // sc → direto
+  const i06=sv.tempo>0?Math.max(0,Math.min(10,(metaTempo/sv.tempo)*10)):0; // dias → inv
+  const i07=Math.min(10,sv.taxa/10);                            // pct → /10
+  const taxaPrazo=sp.taxaPrazo??0;
+  const i08=Math.min(10,taxaPrazo/10);                          // pct → /10
+  const revEff=sp.revEff??0;
+  const i09=Math.min(10,revEff/10);                             // pct → /10
+  const i10=Math.min(10,calcI10()/10);                          // pct → /10
+  const i11=Math.min(10,(calcI11()/nEmps)*10);                  // int → %emp
+
+  const norm=[i01,i02,i03,i04,i05,i06,i07,i08,i09,i10,i11];
   return {norm,avg:norm.reduce((a,b)=>a+b,0)/norm.length};
 }
 
@@ -924,13 +928,13 @@ function renderIndCards(){
       if(d.fmt==='dias') fv=fN(val,1)+' dias';
     }
 
-    // Score 0-10 normalizado
+    // Score 0-10 normalizado (mesma lógica do calcIndice)
     let score=null;
-    if(val!==null&&val!==undefined&&meta!==null&&meta!==undefined&&Number(meta)>0){
-      if(isInv) score=Math.min(10,(Number(meta)/Number(val))*10);
-      else       score=Math.min(10,(Number(val)/Number(meta))*10);
-    } else if(d.fmt==='sc'&&val!==null) {
-      score=Math.min(10,Number(val)); // já é 0-10
+    if(val!==null&&val!==undefined){
+      if(d.fmt==='sc')   score=Math.min(10,Number(val));                          // já é 0-10
+      if(d.fmt==='int')  score=Math.min(10,(Number(val)/EMPS.length)*10);         // %emp
+      if(d.fmt==='pct')  score=Math.min(10,Number(val)/10);                       // %→/10
+      if(d.fmt==='dias') score=Number(val)>0?Math.min(10,(Number(meta)/Number(val))*10):0; // inv
     }
     const scoreStr=score!==null?fN(score)+' / 10':'— / 10';
 
