@@ -842,7 +842,7 @@ function renderInsights(){
   else its.push({c:'bad',h:`<strong>Performance abaixo:</strong> Índice PEX de <strong>${fN(avg)}</strong>. Revisão urgente do pipeline.`});
   if(calcI02()<4) its.push({c:'bad',h:`<strong>Pipeline maduro insuficiente:</strong> Apenas <strong>${calcI02()} empreend.</strong> com score ≥ 7,0 (meta: 4).`});
   if(sp.atrasadoN>0) its.push({c:'bad',h:`<strong>${sp.atrasadoN} protocolo(s) atrasado(s):</strong> passaram da data meta.`});
-  if(sv.tempo>0&&sv.tempo>getMetaInd('IND-06',10)) its.push({c:'w',h:`<strong>Tempo médio de análise:</strong> ${fN(sv.tempo,1)} dias (meta: ${getMetaInd('IND-06',10)} dias).`});
+  if(sv.tempo>0&&sv.tempo>getMetaInd('IND-06',10)) its.push({c:'w',h:'<strong>Tempo médio de análise:</strong> '+fN(sv.tempo,1)+' dias (meta: '+getMetaInd('IND-06',10)+' dias).'});
   if(sp.revEff!==null&&sp.revEff<80) its.push({c:'w',h:`<strong>Eficiência de revisões:</strong> ${sp.revEff}% dos protocolos têm ≤ 3 revisões.`});
   its.push({c:'info',h:`<strong>Melhor empreendimento:</strong> ${best} &nbsp;|&nbsp; <strong>Pior:</strong> ${worst}`});
   document.getElementById('insights').innerHTML=its.map(i=>`<div class="ins ${i.c}">${i.h}</div>`).join('');
@@ -999,7 +999,7 @@ function renderAcomp(){
     const body=document.createElement('div'); body.className='acc-body open';
     head.onclick=function(){this.classList.toggle('open');body.classList.toggle('open');};
     const tbl=document.createElement('table');
-    const ths=EMPS.map(e=>`<th style="text-align:center;font-size:8px;min-width:52px">${e.replace(/ /g,'<br>')}</th>`).join('');
+    const ths=EMPS.map(function(e){ return '<th style="text-align:center;font-size:8px;min-width:52px">'+e.replace(/ /g,'<br>')+'</th>'; }).join('');
     tbl.innerHTML=`<thead><tr><th style="min-width:190px">Etapa</th>${ths}</tr></thead>`;
     const tb=document.createElement('tbody');
     grp.e.forEach(etapa=>{
@@ -1014,8 +1014,8 @@ function renderAcomp(){
   const es=EMPS.map((_,i)=>scoreEmp(i));
   document.getElementById('res-card').innerHTML=`<div class="card-title">Resultado por Empreendimento</div>
     <div class="tbl-wrap"><table>
-      <thead><tr><th>Métrica</th>${EMPS.map(e=>`<th style="text-align:center;font-size:8px">${e.replace(/ /g,'<br>')}</th>`).join('')}</tr></thead>
-      <tbody><tr><td style="font-weight:600">Score Final</td>${es.map(s=>`<td style="font-family:var(--mono);text-align:center;color:${cor(s)};font-weight:700;font-size:13px">${fN(s)}</td>`).join('')}</tr></tbody>
+      <thead><tr><th>Métrica</th>${EMPS.map(function(e){ return '<th style="text-align:center;font-size:8px">'+e.replace(/ /g,'<br>')+'</th>'; }).join('')}</tr></thead>
+      <tbody><tr><td style="font-weight:600">Score Final</td>${es.map(function(s){ return '<td style="font-family:var(--mono);text-align:center;color:'+cor(s)+';font-weight:700;font-size:13px">'+fN(s)+'</td>'; }).join('')}</tr></tbody>
     </table></div>
     <div style="margin-top:14px;font-family:var(--mono);font-size:12px;color:var(--muted)">
       Média geral: <strong style="color:var(--gold);font-size:18px">${fN(calcI01())}</strong>
@@ -1108,7 +1108,7 @@ function renderProto(){
 
     let badges='';
     if(atras>0) badges+='<span class="pb pb-atrasado">'+(atras>1?(atras+' atrasados'):(atras+' atrasado'))+'</span> ';
-    else if(abertos.length>0) badges+=`<span class="pb pb-prazo">${abertos.length} no prazo</span> `;
+    else if(abertos.length>0) badges+='<span class="pb pb-prazo">'+abertos.length+' no prazo</span> ';
     if(ok>0) badges+='<span class="pb pb-ok">'+(ok>1?(ok+' aprovados'):(ok+' aprovado'))+'</span>';
 
     const headDiv=document.createElement('div');
@@ -1132,8 +1132,8 @@ function renderProto(){
         if(p.meta){
           const metaD=new Date(p.meta); metaD.setHours(0,0,0,0);
           const diff=Math.round((metaD-hoje)/86400000);
-          if(diff<0){ status='Atrasado'; statusCls='pb-atrasado'; tagDias=`<span class="tag-dias neg">${diff}d</span>`; }
-          else { status='No prazo'; statusCls='pb-prazo'; tagDias=`<span class="tag-dias pos">+${diff}d</span>`; }
+          if(diff<0){ status='Atrasado'; statusCls='pb-atrasado'; tagDias='<span class="tag-dias neg">'+diff+'d</span>'; }
+          else { status='No prazo'; statusCls='pb-prazo'; tagDias='<span class="tag-dias pos">+'+diff+'d</span>'; }
         } else { status='Em aberto'; statusCls='pb-ns'; }
       } else { status='Não iniciado'; statusCls='pb-ns'; }
 
@@ -1217,14 +1217,17 @@ function renderRevisoes(){
     cont.innerHTML=`<div style="font-family:var(--mono);font-size:12px;color:var(--dim);padding:8px 0">Nenhuma revisão ainda. A 1ª revisão ocorre quando a prefeitura devolve e você reenvia com correções.</div>`;
     return;
   }
-  cont.innerHTML=_modalRevisoes.map((r,i)=>`<div class="rev-row">
-    <div class="rev-num"><span class="rev-badge ${i+1<=3?'rev-ok':'rev-bad'}">Rev. ${i+1}${i+1>3?' ⚠':''}</span></div>
-    <div class="rev-dates">
-      <label>Recebido da Pref.<input type="date" value="${r.recebimento||''}" onchange="_modalRevisoes[${i}].recebimento=this.value"></label>
-      <label>Reenvio c/ correções<input type="date" value="${r.reenvio||''}" onchange="_modalRevisoes[${i}].reenvio=this.value"></label>
-    </div>
-    <button class="btn d sm" onclick="_modalRevisoes.splice(${i},1);renderRevisoes()" style="margin-left:auto">✕</button>
-  </div>`).join('');
+  cont.innerHTML=_modalRevisoes.map(function(r,i){
+    var rn=i+1, rc=rn<=3?'rev-ok':'rev-bad', rw=rn>3?' &#x26A0;':'';
+    return '<div class="rev-row">'
+      +'<div class="rev-num"><span class="rev-badge '+rc+'">Rev. '+rn+rw+'</span></div>'
+      +'<div class="rev-dates">'
+      +'<label>Recebido da Pref.<input type="date" value="'+(r.recebimento||'')+'" onchange="_modalRevisoes['+i+'].recebimento=this.value"></label>'
+      +'<label>Reenvio<input type="date" value="'+(r.reenvio||'')+'" onchange="_modalRevisoes['+i+'].reenvio=this.value"></label>'
+      +'</div>'
+      +'<button class="btn d sm" onclick="_modalRevisoes.splice('+i+',1);renderRevisoes()" style="margin-left:auto">&#x2715;</button>'
+      +'</div>';
+  }).join('');
 }
 
 async function salvarModalProto(){
@@ -1278,8 +1281,8 @@ function renderEtapasMeta(){
         const vencD=new Date(contratD); vencD.setDate(vencD.getDate()+parseInt(me.prazo_dias));
         const diff=Math.round((vencD-hoje)/86400000);
         statusHtml=diff>=0
-          ?`<span class="st st-ok">✓ No prazo</span> <span class="tag-dias pos">+${diff}d</span>`
-          :`<span class="st st-bad">✗ Atrasado</span> <span class="tag-dias neg">${diff}d</span>`;
+          ?('<span class="st st-ok">&#x2713; No prazo</span> <span class="tag-dias pos">+'+diff+'d</span>')
+          :('<span class="st st-bad">&#x2717; Atrasado</span> <span class="tag-dias neg">'+diff+'d</span>');
       } else if(me.contratacao){
         statusHtml=`<span style="color:var(--dim);font-family:var(--mono);font-size:12px">sem prazo</span>`;
       }
