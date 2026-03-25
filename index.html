@@ -58,7 +58,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14
 
 /* LOADING */
 #loading{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .4s}
-#loading.hide{opacity:0;pointer-events:none}
+#loading.hide{display:none!important}
 .spinner{width:32px;height:32px;border:1px solid rgba(200,169,110,.15);border-top-color:var(--gold);border-radius:50%;animation:spin 1s linear infinite}
 .load-logo{font-family:var(--serif);font-size:44px;font-weight:300;color:rgba(200,169,110,.7);letter-spacing:.12em;margin-bottom:8px}
 .load-txt{font-family:var(--mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:rgba(200,169,110,.4);margin-top:8px}
@@ -1371,35 +1371,38 @@ function goTab(el,id){
 //  INIT
 // ══════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', ()=>{
-  // Esconde loading imediatamente e inicia conexão em background
-  const loading = document.getElementById('loading');
-  loading.classList.add('hide');
-  renderTudo(); // renderiza com dados vazios enquanto conecta
+  // PASSO 1: esconde loading IMEDIATAMENTE
+  try { document.getElementById('loading').classList.add('hide'); } catch(e){}
 
-  // Conecta em background sem travar a UI
-  (async ()=>{
-    try {
-      const cfg = getConfig();
-      if(!initSupabase(cfg.url, cfg.key)){
-        setSaveStatus('error','credenciais inválidas'); return;
+  // PASSO 2: renderiza interface vazia
+  try { renderTudo(); } catch(e){ console.error('renderTudo:', e); }
+
+  // PASSO 3: conecta em background
+  setTimeout(function(){
+    (async function(){
+      try {
+        var cfg = getConfig();
+        if(!initSupabase(cfg.url, cfg.key)){
+          setSaveStatus('error','credenciais invalidas'); return;
+        }
+        setSaveStatus('saving','conectando...');
+        var ok = await testarConexao();
+        if(!ok){
+          setSaveStatus('error','sem conexao');
+          try { document.getElementById('conn-status').innerHTML='<span style="color:var(--red)">Falha na conexao.</span>'; } catch(e){}
+          return;
+        }
+        try { document.getElementById('conn-status').innerHTML='<span style="color:var(--green)">Conectado ao Supabase</span>'; } catch(e){}
+        await carregarDados();
+        try { renderTudo(); } catch(e){ console.error('renderTudo2:', e); }
+        setSaveStatus('saved','conectado');
+        setTimeout(function(){ setSaveStatus('','conectado'); }, 1500);
+      } catch(e){
+        console.error('Init error:', e);
+        setSaveStatus('error','erro: '+e.message);
       }
-      setSaveStatus('saving','conectando…');
-      const ok = await testarConexao();
-      if(!ok){
-        setSaveStatus('error','sem conexão');
-        document.getElementById('conn-status').innerHTML='<span style="color:var(--red)">✗ Falha na conexão.</span>';
-        return;
-      }
-      document.getElementById('conn-status').innerHTML='<span style="color:var(--green)">✓ Conectado ao Supabase</span>';
-      await carregarDados();
-      renderTudo();
-      setSaveStatus('saved','conectado');
-      setTimeout(()=>setSaveStatus('','● conectado'),1500);
-    } catch(e){
-      console.error('Init error:', e);
-      setSaveStatus('error','erro: '+e.message);
-    }
-  })();
+    })();
+  }, 50);
 });
 document.getElementById('modal-proto').addEventListener('click',function(e){if(e.target===this)fecharModalProto();});
 document.addEventListener('change',function(e){if(['mp-ab','mp-meta','mp-ap'].includes(e.target.id))atualizarStatusAuto();});
