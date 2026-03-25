@@ -607,18 +607,18 @@ async function seedScores(){
 
 async function seedViabilidades(){
   const padrao=[
-    {nome:'Brava Norte',    area:'',ini:'2025-03-18',ent:'2025-04-04',res:'',dec:'',obs:''},
-    {nome:'Barra Norte',    area:'',ini:'2025-05-08',ent:'2025-05-15',res:'',dec:'',obs:''},
-    {nome:'Jeep',           area:'',ini:'2025-05-30',ent:'2025-06-16',res:'',dec:'',obs:''},
-    {nome:'Bradesco',       area:'',ini:'2025-06-18',ent:'2025-06-18',res:'',dec:'',obs:''},
-    {nome:'Brava Guarani',  area:'',ini:'2025-07-22',ent:'2025-07-30',res:'',dec:'',obs:''},
-    {nome:'Joel Ferreira',  area:'',ini:'2025-07-22',ent:'2025-08-15',res:'',dec:'',obs:''},
-    {nome:'Fratelli',       area:'',ini:'2025-07-30',ent:'2025-08-21',res:'',dec:'',obs:''},
-    {nome:'Mitsubishi',     area:'',ini:'2025-07-31',ent:'2025-08-14',res:'',dec:'',obs:''},
-    {nome:'Laura Laurindo', area:'',ini:'2025-08-27',ent:'2025-09-05',res:'',dec:'',obs:''},
-    {nome:'Jose Muller',    area:'',ini:'2025-09-30',ent:'2025-10-03',res:'',dec:'',obs:''},
-    {nome:'Varandas v1',    area:'',ini:'2025-10-17',ent:'2025-10-31',res:'',dec:'',obs:''},
-    {nome:'Brava Summer',   area:'',ini:'2025-11-26',ent:'2025-12-02',res:'',dec:'',obs:''},
+    {nome:'Brava Norte',    area:'5.800,69',ini:'2025-03-18',ent:'2025-04-04',res:'',dec:'',obs:''},
+    {nome:'Barra Norte',    area:'2.528,08',ini:'2025-05-08',ent:'2025-05-15',res:'',dec:'',obs:''},
+    {nome:'Jeep',           area:'4.876,00',ini:'2025-05-30',ent:'2025-06-16',res:'',dec:'',obs:''},
+    {nome:'Bradesco',       area:'2.395,92',ini:'2025-06-18',ent:'2025-06-18',res:'',dec:'',obs:''},
+    {nome:'Brava Guarani',  area:'1.936,10',ini:'2025-07-22',ent:'2025-07-30',res:'',dec:'',obs:''},
+    {nome:'Joel Ferreira',  area:'1.446,29',ini:'2025-07-22',ent:'2025-08-15',res:'',dec:'',obs:''},
+    {nome:'Fratelli',       area:'1.227,48',ini:'2025-07-30',ent:'2025-08-21',res:'',dec:'',obs:''},
+    {nome:'Mitsubishi',     area:'3.424,60',ini:'2025-07-31',ent:'2025-08-14',res:'',dec:'',obs:''},
+    {nome:'Laura Laurindo', area:'952,68',  ini:'2025-08-27',ent:'2025-09-05',res:'',dec:'',obs:''},
+    {nome:'Jose Muller',    area:'9.620,00',ini:'2025-09-30',ent:'2025-10-03',res:'',dec:'',obs:''},
+    {nome:'Varandas v1',    area:'8.535,01',ini:'2025-10-17',ent:'2025-10-31',res:'',dec:'',obs:''},
+    {nome:'Brava Summer',   area:'5.470,48',ini:'2025-11-26',ent:'2025-12-02',res:'',dec:'',obs:''},
   ];
   const {data}=await db.from('viabilidades').insert(padrao).select();
   V=(data||[]).map(r=>({id:r.id,nome:r.nome,area:r.area||'',ini:r.ini,ent:r.ent,res:r.res,dec:r.dec,obs:r.obs}));
