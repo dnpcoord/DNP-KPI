@@ -588,7 +588,7 @@ async function carregarDados(){
 
     // Metas etapas
     const {data:meRows}=await db.from('metas_etapas').select('*');
-    if(meRows) meRows.forEach(r=>{ MetaEtapas[r.chave]={contratacao:r.contratacao,prazo_dias:r.prazo_dias}; });
+    if(meRows) meRows.forEach(r=>{ MetaEtapas[r.chave]={contratacao:r.contratacao,prazo_dias:r.prazo_dias,conclusao:r.conclusao||''}; });
 
     setSaveStatus('saved','dados carregados');
     setTimeout(()=>setSaveStatus('','conectado ao Supabase'),2000);
@@ -723,6 +723,8 @@ function calcI10(){
 }
 
 // IND-11: Empreendimentos com todas as metas de etapas no prazo
+// Concluído dentro do prazo = conta como no prazo
+// Concluído com atraso = conta como atrasado
 function calcI11(){
   const hoje=new Date(); hoje.setHours(0,0,0,0);
   let ok=0;
@@ -733,6 +735,12 @@ function calcI11(){
     const todas=metas.every(m=>{
       const cont=new Date(m.contratacao); cont.setHours(0,0,0,0);
       const venc=new Date(cont); venc.setDate(venc.getDate()+parseInt(m.prazo_dias));
+      if(m.conclusao){
+        // Concluído: verificar se foi dentro do prazo
+        const conclD=new Date(m.conclusao); conclD.setHours(0,0,0,0);
+        return conclD<=venc; // true = no prazo, false = atrasado
+      }
+      // Não concluído: verificar se ainda está no prazo
       return hoje<=venc;
     });
     if(todas) ok++;
@@ -764,7 +772,11 @@ function calcI12(){
       const algumAtrasado=metas.some(m=>{
         const cont=new Date(m.contratacao); cont.setHours(0,0,0,0);
         const venc=new Date(cont); venc.setDate(venc.getDate()+parseInt(m.prazo_dias));
-        return hoje>venc;
+        if(m.conclusao){
+          const conclD=new Date(m.conclusao); conclD.setHours(0,0,0,0);
+          return conclD>venc; // concluído com atraso
+        }
+        return hoje>venc; // não concluído e passou do prazo
       });
       if(algumAtrasado) return;
     }
@@ -1354,29 +1366,44 @@ function renderEtapasMeta(){
     head.onclick=function(){this.classList.toggle('open');body.classList.toggle('open');};
 
     const card=document.createElement('div'); card.className='card'; card.style.margin='0';
-    let html=`<div style="display:grid;grid-template-columns:170px 110px 150px auto;gap:12px;padding:8px 0;border-bottom:1px solid var(--border2);margin-bottom:4px">
+    let html=`<div style="display:grid;grid-template-columns:150px 110px 100px 110px auto;gap:10px;padding:8px 0;border-bottom:1px solid var(--border2);margin-bottom:4px">
       <div style="font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(200,169,110,.75)">Empreendimento</div>
       <div style="font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(200,169,110,.75)">Contratação</div>
       <div style="font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(200,169,110,.75)">Prazo (dias)</div>
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(200,169,110,.75)">Conclusão</div>
       <div style="font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(200,169,110,.75)">Status</div>
     </div>`;
 
     EMPS.forEach((emp,ei)=>{
       const chave=`${ei}_${gi}`;
-      const me=MetaEtapas[chave]||{contratacao:'',prazo_dias:''};
+      const me=MetaEtapas[chave]||{contratacao:'',prazo_dias:'',conclusao:''};
       let statusHtml='<span style="color:var(--dim);font-family:var(--mono);font-size:12px">—</span>';
+
       if(me.contratacao&&me.prazo_dias){
         const contratD=new Date(me.contratacao); contratD.setHours(0,0,0,0);
         const vencD=new Date(contratD); vencD.setDate(vencD.getDate()+parseInt(me.prazo_dias));
-        const diff=Math.round((vencD-hoje)/86400000);
-        statusHtml=diff>=0
-          ?`<span class="st st-ok">✓ No prazo</span> <span class="tag-dias pos">+${diff}d</span>`
-          :`<span class="st st-bad">✗ Atrasado</span> <span class="tag-dias neg">${diff}d</span>`;
+
+        if(me.conclusao){
+          // CONCLUÍDO — verificar se dentro ou fora do prazo
+          const conclD=new Date(me.conclusao); conclD.setHours(0,0,0,0);
+          const saldo=Math.round((vencD-conclD)/86400000);
+          if(saldo>=0){
+            statusHtml=`<span class="st st-ok">✓ Concluído no prazo</span> <span class="tag-dias pos">${saldo}d sobrando</span>`;
+          } else {
+            statusHtml=`<span class="st st-bad">✓ Concluído c/ atraso</span> <span class="tag-dias neg">${saldo}d</span>`;
+          }
+        } else {
+          // SEM CONCLUSÃO — verificar prazo vs hoje
+          const diff=Math.round((vencD-hoje)/86400000);
+          statusHtml=diff>=0
+            ?`<span class="st st-ok">✓ No prazo</span> <span class="tag-dias pos">+${diff}d</span>`
+            :`<span class="st st-bad">✗ Atrasado</span> <span class="tag-dias neg">${diff}d</span>`;
+        }
       } else if(me.contratacao){
         statusHtml=`<span style="color:var(--dim);font-family:var(--mono);font-size:12px">sem prazo</span>`;
       }
 
-      html+=`<div style="display:grid;grid-template-columns:170px 110px 150px auto;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+      html+=`<div style="display:grid;grid-template-columns:150px 110px 100px 110px auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
         <div style="font-size:12px;font-weight:500">${emp}</div>
         <div><input type="date" value="${me.contratacao||''}"
           style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-family:var(--mono);font-size:11px;padding:3px 6px;outline:none;width:100%"
@@ -1384,11 +1411,15 @@ function renderEtapasMeta(){
           onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border2)'"></div>
         <div style="display:flex;align-items:center;gap:6px">
           <input type="number" value="${me.prazo_dias||''}" min="1" placeholder="ex: 120"
-            style="width:75px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);color:var(--gold);font-family:var(--mono);font-size:12px;padding:3px 7px;outline:none;text-align:center"
+            style="width:70px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);color:var(--gold);font-family:var(--mono);font-size:12px;padding:3px 7px;outline:none;text-align:center"
             onchange="salvarMetaEtapa('${chave}','prazo_dias',this.value)"
             onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border2)'">
-          <span style="font-family:var(--mono);font-size:11px;color:var(--dim)">dias</span>
+          <span style="font-family:var(--mono);font-size:10px;color:var(--dim)">d</span>
         </div>
+        <div><input type="date" value="${me.conclusao||''}"
+          style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);color:var(--green);font-family:var(--mono);font-size:11px;padding:3px 6px;outline:none;width:100%"
+          onchange="salvarMetaEtapa('${chave}','conclusao',this.value)"
+          onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border2)'"></div>
         <div id="emeta-status-${chave}">${statusHtml}</div>
       </div>`;
     });
@@ -1399,11 +1430,11 @@ function renderEtapasMeta(){
 }
 
 async function salvarMetaEtapa(chave,campo,valor){
-  if(!MetaEtapas[chave]) MetaEtapas[chave]={contratacao:'',prazo_dias:''};
+  if(!MetaEtapas[chave]) MetaEtapas[chave]={contratacao:'',prazo_dias:'',conclusao:''};
   MetaEtapas[chave][campo]=valor;
   const me=MetaEtapas[chave];
   setSaveStatus('saving','salvando…');
-  const {error}=await db.from('metas_etapas').upsert({chave,contratacao:me.contratacao||null,prazo_dias:parseInt(me.prazo_dias)||null},{onConflict:'chave'});
+  const {error}=await db.from('metas_etapas').upsert({chave,contratacao:me.contratacao||null,prazo_dias:parseInt(me.prazo_dias)||null,conclusao:me.conclusao||null},{onConflict:'chave'});
   if(error){ setSaveStatus('error','erro ao salvar'); console.error(error); }
   else { setSaveStatus('saved','✓ salvo'); setTimeout(()=>setSaveStatus('','conectado ao Supabase'),2000); }
   renderEtapasMeta();
