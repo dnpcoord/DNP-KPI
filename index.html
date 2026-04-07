@@ -1431,13 +1431,47 @@ function renderEtapasMeta(){
 
 async function salvarMetaEtapa(chave,campo,valor){
   if(!MetaEtapas[chave]) MetaEtapas[chave]={contratacao:'',prazo_dias:'',conclusao:''};
+  const old=MetaEtapas[chave][campo];
+  if(old===valor) return; // sem mudança, não faz nada
   MetaEtapas[chave][campo]=valor;
   const me=MetaEtapas[chave];
   setSaveStatus('saving','salvando…');
   const {error}=await db.from('metas_etapas').upsert({chave,contratacao:me.contratacao||null,prazo_dias:parseInt(me.prazo_dias)||null,conclusao:me.conclusao||null},{onConflict:'chave'});
   if(error){ setSaveStatus('error','erro ao salvar'); console.error(error); }
   else { setSaveStatus('saved','✓ salvo'); setTimeout(()=>setSaveStatus('','conectado ao Supabase'),2000); }
-  renderEtapasMeta();
+  // Atualiza só o status deste item, sem reconstruir a UI inteira
+  atualizarStatusEtapa(chave);
+  // Atualiza indicadores que dependem de metas de etapas
+  renderKPIs(); renderInsights(); renderGraficos(); renderIndCards();
+}
+
+function atualizarStatusEtapa(chave){
+  const el=document.getElementById('emeta-status-'+chave);
+  if(!el) return;
+  const me=MetaEtapas[chave]||{contratacao:'',prazo_dias:'',conclusao:''};
+  const hoje=new Date(); hoje.setHours(0,0,0,0);
+  let statusHtml='<span style="color:var(--dim);font-family:var(--mono);font-size:12px">—</span>';
+  if(me.contratacao&&me.prazo_dias){
+    const contratD=new Date(me.contratacao); contratD.setHours(0,0,0,0);
+    const vencD=new Date(contratD); vencD.setDate(vencD.getDate()+parseInt(me.prazo_dias));
+    if(me.conclusao){
+      const conclD=new Date(me.conclusao); conclD.setHours(0,0,0,0);
+      const saldo=Math.round((vencD-conclD)/86400000);
+      if(saldo>=0){
+        statusHtml=`<span class="st st-ok">✓ Concluído no prazo</span> <span class="tag-dias pos">${saldo}d sobrando</span>`;
+      } else {
+        statusHtml=`<span class="st st-bad">✓ Concluído c/ atraso</span> <span class="tag-dias neg">${saldo}d</span>`;
+      }
+    } else {
+      const diff=Math.round((vencD-hoje)/86400000);
+      statusHtml=diff>=0
+        ?`<span class="st st-ok">✓ No prazo</span> <span class="tag-dias pos">+${diff}d</span>`
+        :`<span class="st st-bad">✗ Atrasado</span> <span class="tag-dias neg">${diff}d</span>`;
+    }
+  } else if(me.contratacao){
+    statusHtml=`<span style="color:var(--dim);font-family:var(--mono);font-size:12px">sem prazo</span>`;
+  }
+  el.innerHTML=statusHtml;
 }
 
 // ══════════════════════════════════════════════════════════════
